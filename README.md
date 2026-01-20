@@ -27,3 +27,25 @@ The application includes auto-generated API documentation powered by SpringDoc O
 - **Interactive Swagger UI:** http://localhost:8080/swagger-ui.html
 - **OpenAPI Specification (JSON):** http://localhost:8080/v3/api-docs
 - **OpenAPI Specification (YAML):** http://localhost:8080/v3/api-docs.yaml
+
+## Spring Boot Actuator (Monitoring & Health Checks)
+
+The application includes Spring Boot Actuator for production-ready monitoring.
+
+**Available endpoints:** (Also visible in Swagger UI)
+- **Health Check:** http://localhost:8080/actuator/health
+- **Application Info:** http://localhost:8080/actuator/info
+- **Metrics:** http://localhost:8080/actuator/metrics
+- **Prometheus Metrics:** http://localhost:8080/actuator/prometheus
+
+The health endpoint includes:
+- Liveness probe: Is the application running?
+- Readiness probe: Is the application ready to handle requests?
+- Database connectivity status
+
+## TODO:
+FIX: Vulnerability found in dependency:
+springdoc-openapi-starter-webmvc-ui
+when patch will be released 
+- currently used latest version
+
