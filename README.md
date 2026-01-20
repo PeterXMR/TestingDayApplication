@@ -45,7 +45,7 @@ The health endpoint includes:
 
 ## TODO:
 FIX: Vulnerability found in dependency:
-springdoc-openapi-starter-webmvc-ui
+`springdoc-openapi-starter-webmvc-ui`
 when patch will be released 
 - currently used latest version
 
