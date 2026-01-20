@@ -46,6 +46,7 @@ The health endpoint includes:
 ## TODO:
 FIX: Vulnerability found in dependency:
 `springdoc-openapi-starter-webmvc-ui`
+`com.uber.nullaway`
 when patch will be released 
 - currently used latest version
 
