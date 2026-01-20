@@ -11,8 +11,13 @@
 — Creates both the database and app configured to work together
 
 ## CI/CD Pipeline
-GitHub Actions automatically builds the application 
-and runs all tests with each commit pushed to the `main` branch.
+GitHub Actions automatically:
+- Builds the application and runs all tests with each commit pushed to the `main` branch
+- Builds a multi-platform Docker image (linux/amd64, linux/arm64)
+- Pushes the image to GitHub Container Registry (GHCR)
+
+The Docker image is available at: 
+`https://github.com/PeterXMR/TestingDayApplication/pkgs/container/testingdayapplication`
 
 ## API Documentation (Swagger UI)
 
