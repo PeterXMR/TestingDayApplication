@@ -2,6 +2,9 @@ package com.shipmonk.testingday.provider.fixer;
 
 import com.shipmonk.testingday.api.ExchangeResponse;
 import com.shipmonk.testingday.api.ExchangeRate;
+import com.shipmonk.testingday.exception.ExchangeRateAuthException;
+import com.shipmonk.testingday.exception.ExchangeRateProviderException;
+
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
@@ -19,14 +22,12 @@ public class FixerIoResponseAdapter {
      *
      * @param response the raw Fixer.io response
      * @return ExchangeRate entity object
-     * @throws IllegalArgumentException if the response format is invalid
+     * @throws ExchangeRateAuthException if API key is invalid or expired
+     * @throws ExchangeRateProviderException if the API returns other errors
      */
     public static ExchangeRate adapt(ExchangeResponse response) {
         if (!response.isSuccess()) {
-            throw new IllegalArgumentException(
-                "Fixer.io API returned error: " +
-                (response.getError() != null ? response.getError().getInfo() : "Unknown error")
-            );
+            handleApiError(response);
         }
 
         try {
@@ -37,8 +38,37 @@ public class FixerIoResponseAdapter {
                 response.getRates()
             );
         } catch (Exception e) {
-            throw new IllegalArgumentException("Failed to parse Fixer.io response: " + e.getMessage(), e);
+            throw new ExchangeRateProviderException("Failed to parse Fixer.io response: " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * Handles Fixer.io API errors by throwing appropriate exceptions.
+     * Fixer.io error codes:
+     * - 101: Invalid API key
+     * - 104: Usage limit exceeded
+     * - Other: General provider errors
+     *
+     * @param response the error response from Fixer.io
+     * @throws ExchangeRateAuthException for auth-related errors
+     * @throws ExchangeRateProviderException for other errors
+     */
+    public static void handleApiError(ExchangeResponse response) {
+        String errorMessage = response.getError() != null
+            ? response.getError().getInfo()
+            : "Unknown error";
+
+        int errorCode = response.getError() != null
+            ? response.getError().getCode()
+            : 0;
+
+        // Auth-related errors (invalid key, expired, usage limit)
+        if (errorCode == 101 || errorCode == 104) {
+            throw new ExchangeRateAuthException("Fixer.io authentication failed: " + errorMessage);
+        }
+
+        // All other errors
+        throw new ExchangeRateProviderException("Fixer.io API error: " + errorMessage);
     }
 }
 

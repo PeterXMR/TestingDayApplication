@@ -1,7 +1,9 @@
 package com.shipmonk.testingday.provider.fixer;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.shipmonk.testingday.api.ExchangeResponse;
 import com.shipmonk.testingday.api.ExchangeRate;
+import com.shipmonk.testingday.exception.ExchangeRateAuthException;
 import com.shipmonk.testingday.exception.ExchangeRateNotFoundException;
 import com.shipmonk.testingday.exception.ExchangeRateProviderException;
 import com.shipmonk.testingday.provider.ExchangeRateProvider;
@@ -9,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
@@ -27,14 +30,17 @@ public class FixerIoExchangeRateProvider implements ExchangeRateProvider {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_DATE;
 
     private final RestTemplate restTemplate;
+    private final ObjectMapper objectMapper;
     private final String apiKey;
     private final String baseUrl;
     private final String baseCurrency;
 
     public FixerIoExchangeRateProvider(
             RestTemplateBuilder restTemplateBuilder,
-            FixerIoProperties properties) {
+            FixerIoProperties properties,
+            ObjectMapper objectMapper) {
         this.restTemplate = restTemplateBuilder.build();
+        this.objectMapper = objectMapper;
         this.apiKey = properties.getApiKey();
         this.baseUrl = properties.getBaseUrl();
         this.baseCurrency = properties.getBaseCurrency();
@@ -59,8 +65,16 @@ public class FixerIoExchangeRateProvider implements ExchangeRateProvider {
 
             return exchangeRate;
 
-        } catch (ExchangeRateProviderException e) {
+        } catch (ExchangeRateProviderException | ExchangeRateAuthException e) {
             throw e;
+        } catch (HttpClientErrorException e) {
+            logger.error("HTTP error from Fixer.io for date: {}, status: {}", date, e.getStatusCode(), e);
+            handleHttpClientError(e);
+            // If handleHttpClientError doesn't throw, throw generic exception
+            throw new ExchangeRateProviderException(
+                "Failed to fetch exchange rates from Fixer.io: " + e.getMessage(),
+                e
+            );
         } catch (RestClientException e) {
             logger.error("Failed to fetch exchange rates from Fixer.io for date: {}", date, e);
             throw new ExchangeRateProviderException(
@@ -73,6 +87,25 @@ public class FixerIoExchangeRateProvider implements ExchangeRateProvider {
                 "Unexpected error fetching exchange rates: " + e.getMessage(),
                 e
             );
+        }
+    }
+
+    /**
+     * Handles HTTP client errors (4xx) from Fixer.io.
+     * Parses the response body to determine the specific error type.
+     */
+    private void handleHttpClientError(HttpClientErrorException e) {
+        try {
+            String responseBody = e.getResponseBodyAsString();
+            ExchangeResponse errorResponse = objectMapper.readValue(responseBody, ExchangeResponse.class);
+
+            // Delegate to adapter for consistent error handling
+            FixerIoResponseAdapter.handleApiError(errorResponse);
+
+        } catch (ExchangeRateAuthException | ExchangeRateProviderException ex) {
+            throw ex;
+        } catch (Exception parseEx) {
+            logger.warn("Could not parse Fixer.io error response: {}", parseEx.getMessage());
         }
     }
 

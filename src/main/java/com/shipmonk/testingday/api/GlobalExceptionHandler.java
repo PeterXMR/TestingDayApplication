@@ -1,5 +1,6 @@
 package com.shipmonk.testingday.api;
 
+import com.shipmonk.testingday.exception.ExchangeRateAuthException;
 import com.shipmonk.testingday.exception.ExchangeRateNotFoundException;
 import com.shipmonk.testingday.exception.ExchangeRateProviderException;
 
@@ -76,6 +77,26 @@ public class GlobalExceptionHandler {
         );
 
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
+    /**
+     * Handle authentication errors (401 - Unauthorized).
+     * When API key is invalid or missing.
+     */
+    @ExceptionHandler(ExchangeRateAuthException.class)
+    public ResponseEntity<ErrorResponse> handleAuthenticationException(
+            ExchangeRateAuthException ex) {
+
+        logger.error("Authentication failed: {}", ex.getMessage());
+
+        ErrorResponse errorResponse = new ErrorResponse(
+            HttpStatus.UNAUTHORIZED.value(),
+            "UNAUTHORIZED",
+            "Authentication failed",
+            "Invalid or missing API credentials"
+        );
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.UNAUTHORIZED);
     }
 
     /**
