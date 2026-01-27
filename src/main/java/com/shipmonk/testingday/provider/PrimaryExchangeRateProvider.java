@@ -8,6 +8,8 @@ import com.shipmonk.testingday.repository.ExchangeRateRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -44,6 +46,7 @@ public class PrimaryExchangeRateProvider implements ExchangeRateProvider {
     }
 
     @Override
+    @Transactional(isolation = Isolation.SERIALIZABLE)
     public ExchangeRate getExchangeRates(LocalDate date) {
         logger.info("PersistenceProvider: Attempting to retrieve rates for date: {}", date);
 
